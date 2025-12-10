@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     char buf[BUFSZ];
     
     /* Main server loop: accept and process client requests */
-    for (;;) {
+    while (1) {
         /* Receive data from client */
         struct sockaddr_in cli;
         socklen_t clilen = sizeof(cli);
