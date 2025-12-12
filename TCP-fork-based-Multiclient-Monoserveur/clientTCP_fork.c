@@ -19,6 +19,8 @@ void read_response(int sockfd) {
     if (n > 0) {
         buffer[n] = '\0';
         printf("SERVER: %s", buffer);
+        fflush(stdout);
+
     }
 }
 
@@ -58,6 +60,8 @@ int main(int argc, char *argv[]) {
 
     /* 4. Command loop */
     char cmd[BUF_SIZE];
+
+    read_response(sockfd);
 
     while (1) {
         printf("\nCommands:\n");

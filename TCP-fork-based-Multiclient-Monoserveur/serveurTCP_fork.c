@@ -14,68 +14,67 @@
 #include "tools.h"
 
 #define BUF_SIZE 256
- 
+
 /* Global server start time (used by services to report uptime) */
 time_t start_time;
-void services(char *buffer, int clientfd) {
+void services(char *buffer, int clientfd)
+{
 
-        if (strncmp(buffer, "DATE", 4) == 0) {
-            send_datetime(clientfd);
-        }
-        else if (strncmp(buffer, "LS ", 3) == 0) {
-            char dir[256];
-            sscanf(buffer + 3, "%s", dir);
-            send_directory_list(clientfd, dir);
-        }
-        else if (strncmp(buffer, "CAT ", 4) == 0) {
-            char filename[256];
-            sscanf(buffer + 4, "%s", filename);
-            send_file_content(clientfd, filename);
-        }
-        else if (strncmp(buffer, "UPTIME", 6) == 0) {
-            time_t now = time(NULL);
-            int diff = (int) difftime(now, start_time);
+    if (strncmp(buffer, "DATE", 4) == 0)
+    {
+        send_datetime(clientfd);
+    }
+    else if (strncmp(buffer, "LS ", 3) == 0)
+    {
+        char dir[256];
+        sscanf(buffer + 3, "%s", dir);
+        send_directory_list(clientfd, dir);
+    }
+    else if (strncmp(buffer, "CAT ", 4) == 0)
+    {
+        char filename[256];
+        sscanf(buffer + 4, "%s", filename);
+        send_file_content(clientfd, filename);
+    }
+    else if (strncmp(buffer, "UPTIME", 6) == 0)
+    {
+        time_t now = time(NULL);
+        int diff = (int)difftime(now, start_time);
 
-            char upbuf[128];
-            snprintf(upbuf, sizeof(upbuf),
-                     "Connection uptime: %d seconds\n", diff);
+        char upbuf[128];
+        snprintf(upbuf, sizeof(upbuf),
+                 "Connection uptime: %d seconds\n", diff);
 
-            send_msg(clientfd, upbuf);
-        }
-        else {
-            send_msg(clientfd, "Unknown command\n");
-        }
-
-} 
+        send_msg(clientfd, upbuf);
+    }
+    else
+    {
+        send_msg(clientfd, "Unknown command\n");
+    }
+}
 
 // Child process handles one client
-void handle_client(int clientfd) {
+void handle_client(int clientfd)
+{
     char buffer[BUF_SIZE];
 
-    // Example simple service: send date
-    time_t now = time(NULL);
-    snprintf(buffer, BUF_SIZE,
-             "Welcome! Server date: %s\n", ctime(&now));
-    ssize_t sizeW = write(clientfd, buffer, strlen(buffer));
-    if (sizeW < 0) {
-        perror("write error");
-        close(clientfd);
-        exit(EXIT_FAILURE);
-    }
-
     // Optionally read something from client (blocking)
-    while (1) {
+    while (1)
+    {
         int n = read(clientfd, buffer, BUF_SIZE - 1);
-        if (n <= 0) break; // client disconnected
+        if (n <= 0)
+            break; // client disconnected
         buffer[n] = '\0';
         printf("[Child %d] Received from client: %s", getpid(), buffer);
-        if (strncmp(buffer, "QUIT", 4) == 0) {
+        if (strncmp(buffer, "QUIT", 4) == 0)
+        {
             send_msg(clientfd, "Goodbye!\n");
             break;
         }
-        else {
+        else
+        {
             services(buffer, clientfd);
-        }    
+        }
     }
 
     printf("[Child %d] Client disconnected.\n", getpid());
@@ -83,8 +82,10 @@ void handle_client(int clientfd) {
     exit(0); // Child exits
 }
 
-int main(int argc, char *argv[]) {
-    if (argc != 2) {
+int main(int argc, char *argv[])
+{
+    if (argc != 2)
+    {
         fprintf(stderr, "Usage: %s <port>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
@@ -96,7 +97,11 @@ int main(int argc, char *argv[]) {
 
     // 1. Create socket
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) { perror("socket"); exit(EXIT_FAILURE); }
+    if (sockfd < 0)
+    {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
 
     // 2. Prepare address
     struct sockaddr_in serv_addr;
@@ -107,27 +112,34 @@ int main(int argc, char *argv[]) {
     serv_addr.sin_port = htons(port);
 
     // 3. Bind
-    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-        perror("bind"); close(sockfd); exit(EXIT_FAILURE);
+    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        perror("bind");
+        close(sockfd);
+        exit(EXIT_FAILURE);
     }
 
     // 4. Listen
-    if (listen(sockfd, 10) < 0) {
-        perror("listen"); close(sockfd); exit(EXIT_FAILURE);
+    if (listen(sockfd, 10) < 0)
+    {
+        perror("listen");
+        close(sockfd);
+        exit(EXIT_FAILURE);
     }
 
     printf("[SERVER] Listening on port %d...\n", port);
+
     
-    /* Record server start time for uptime reporting */
-    start_time = time(NULL);
     // 5. Accept clients in a loop
-    while (1) {
+    while (1)
+    {
         /* Accept a client and capture its address so we can log IP:port */
         struct sockaddr_in cli_addr;
         socklen_t cli_len = sizeof(cli_addr);
         int clientfd = accept(sockfd, (struct sockaddr *)&cli_addr, &cli_len);
-        if (clientfd < 0) {
-            perror("accept"); 
+        if (clientfd < 0)
+        {
+            perror("accept");
             continue;
         }
 
@@ -139,19 +151,36 @@ int main(int argc, char *argv[]) {
         // 6. Fork a child to handle the client
         int pid = fork();
 
-        if (pid < 0) {
+        if (pid < 0)
+        {
             perror("fork");
             close(clientfd);
             continue;
         }
 
-        if (pid == 0) {
+        if (pid == 0)
+        {
             // CHILD process
-            close(sockfd);          // child does not accept new clients
+            close(sockfd); // child does not accept new clients
+            // Send welcome message with client file descriptor
+              start_time = time(NULL);
+            
+            char buffer[BUF_SIZE];
+            snprintf(buffer, BUF_SIZE,
+                     "Welcome client %s:%d\n", cli_ip, ntohs(cli_addr.sin_port));
+            ssize_t sizeW = write(clientfd, buffer, strlen(buffer));
+            if (sizeW < 0)
+            {
+                perror("write error");
+                close(clientfd);
+                exit(EXIT_FAILURE);
+            }
             handle_client(clientfd);
-        } else {
+        }
+        else
+        {
             // PARENT process
-            close(clientfd);        // parent closes client socket
+            close(clientfd); // parent closes client socket
         }
     }
 

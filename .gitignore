@@ -1,0 +1,5 @@
+# Ignore .txt files
+*.txt
+
+# Ignore bin folder in TCP-multiclients-multiseveur
+TCP-multiclients-multiseveur/bin/

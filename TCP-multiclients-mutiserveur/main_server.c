@@ -19,11 +19,12 @@ typedef struct {
 
 const char *menu =
 "*********** SERVICES ***********\n"
-"LISTS_DIR <path>\n"
-"CAT_DIR <file>\n"
-"ELAPSED_TIME\n"
-"DATE_TIME\n"
-"END\n"
+"Commands:\n"
+"  DATE\n"
+"  LS <dir>\n"
+"  CAT <file>\n"
+"  UPTIME\n"
+"  QUIT\n"
 "*******************************\n";
 
 void *client_handler(void *arg) {
@@ -36,47 +37,67 @@ void *client_handler(void *arg) {
         int n = read_all(ctx->fd, buf, sizeof(buf));
         if (n <= 0) break;
 
-        if (!strncmp(buf, "LISTS_DIR ", 10)) {
+        if (!strncmp(buf, "LS ", 3)) {
             int svc = connect_to_service(PORT_LISTS_DIR_SERVICE);
-            write(svc, buf+10, strlen(buf)-10);
-            char res[BUFFER];
-            while (read_all(svc, res, sizeof(res)) > 0)
-                write(ctx->fd, res, strlen(res));
-            close(svc);
+            if (svc < 0) {
+                write(ctx->fd, "ERROR: Service not available\n", 28);
+            } else {
+                write(svc, buf+3, strlen(buf)-3);
+                char res[BUFFER];
+                while (read_all(svc, res, sizeof(res)) > 0)
+                    write(ctx->fd, res, strlen(res));
+                close(svc);
+            }
+            write(ctx->fd, "--END--\n", 7);
         }
-        else if (!strncmp(buf, "CAT_DIR ", 8)) {
+        else if (!strncmp(buf, "CAT ", 4)) {
             int svc = connect_to_service(PORT_CAT_DIR_SERVICE);
-            write(svc, buf+8, strlen(buf)-8);
-            char res[BUFFER];
-            while (read_all(svc, res, sizeof(res)) > 0)
-                write(ctx->fd, res, strlen(res));
-            close(svc);
+            if (svc < 0) {
+                write(ctx->fd, "ERROR: Service not available\n", 28);
+            } else {
+                write(svc, buf+4, strlen(buf)-4);
+                char res[BUFFER];
+                while (read_all(svc, res, sizeof(res)) > 0)
+                    write(ctx->fd, res, strlen(res));
+                close(svc);
+            }
+            write(ctx->fd, "--END--\n", 7);
         }
-        else if (!strncmp(buf, "ELAPSED_TIME", 12)) {
+        else if (!strncmp(buf, "UPTIME", 6)) {
             int svc = connect_to_service(PORT_ELAPSED_SERVICE);
-            char res[BUFFER];
-            read_all(svc, res, sizeof(res));
-            close(svc);
+            if (svc < 0) {
+                write(ctx->fd, "ERROR: Service not available\n", 28);
+            } else {
+                char res[BUFFER];
+                read_all(svc, res, sizeof(res));
+                close(svc);
 
-            time_t now_remote = atol(res);
-            int elapsed = now_remote - ctx->start;
-            
-            char out[64];
-            snprintf(out, sizeof(out), "%d seconds\n", elapsed);
-            write(ctx->fd, out, strlen(out));
+                time_t now_remote = atol(res);
+                int elapsed = now_remote - ctx->start;
+                
+                char out[64];
+                snprintf(out, sizeof(out), "%d seconds\n", elapsed);
+                write(ctx->fd, out, strlen(out));
+            }
+            write(ctx->fd, "--END--\n", 7);
         }
-        else if (!strncmp(buf, "DATE_TIME", 9)) {
+        else if (!strncmp(buf, "DATE", 4)) {
             int svc = connect_to_service(PORT_DATE_TIME_SERVICE);
-            char res[BUFFER];
-            read_all(svc, res, sizeof(res));
-            write(ctx->fd, res, strlen(res));
-            close(svc);
+            if (svc < 0) {
+                write(ctx->fd, "ERROR: Service not available\n", 28);
+            } else {
+                char res[BUFFER];
+                read_all(svc, res, sizeof(res));
+                write(ctx->fd, res, strlen(res));
+                close(svc);
+            }
+            write(ctx->fd, "--END--\n", 7);
         }
-        else if (!strncmp(buf, "END", 3)) {
+        else if (!strncmp(buf, "QUIT", 4)) {
             write(ctx->fd, "Goodbye!\n", 9);
             break;
         }
-        write(ctx->fd, menu, strlen(menu));
+        // Removed: write(ctx->fd, menu, strlen(menu)); to avoid resending menu after each command
     }
 
     close(ctx->fd);
