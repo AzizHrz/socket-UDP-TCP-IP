@@ -1,0 +1,11 @@
+#ifndef PORTS_H
+#define PORTS_H
+
+#define PORT_MAIN_SERVER        9000
+#define PORT_LISTS_DIR_SERVICE  9001
+#define PORT_CAT_DIR_SERVICE    9002
+#define PORT_ELAPSED_SERVICE    9003
+#define PORT_DATE_TIME_SERVICE  9004
+
+#endif
+
