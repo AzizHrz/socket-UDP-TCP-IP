@@ -21,6 +21,60 @@ void send_msg(int fd, const char *msg) {
     if (n < 0) perror("write");
 }
 
+// Authenticate client
+int authenticate_client(int fd) {
+    char buffer[BUF_SIZE];
+    int n;
+
+    // Ask for username
+    send_msg(fd, "Username: ");
+    memset(buffer, 0, BUF_SIZE);
+    n = read(fd, buffer, BUF_SIZE - 1);
+    if (n <= 0) return 0;
+    //buffer[strcspn(buffer, "\n")] = 0; // Remove newline
+
+if (n > 0) {
+    buffer[n] = '\0';
+    // Process buffer[0] to buffer[n-1] only
+} else if (n == 0) {
+    buffer[0] = '\0'; // Connection closed
+}
+
+    char username[256];
+    strcpy(username, buffer);
+    printf("[SERVER] Username received: '%s'\n", username);
+
+    // Ask for password
+    send_msg(fd, "Password: ");
+    memset(buffer, 0, BUF_SIZE);
+    n = read(fd, buffer, BUF_SIZE - 1);
+    if (n <= 0) return 0;
+   // buffer[strcspn(buffer, "\n")] = 0; // Remove newline
+
+if (n > 0) {
+    buffer[n] = '\0';
+    // Process buffer[0] to buffer[n-1] only
+} else if (n == 0) {
+    buffer[0] = '\0'; // Connection closed
+}
+
+    char password[256];
+    strcpy(password, buffer);
+    printf("[SERVER] Password received: '%s'\n", password);
+/*// Simple authentication (accept any non-empty username/password)
+    if (strlen(username) > 0 && strlen(password) > 0) {
+    
+    */
+    // Simple authentication (accept any non-empty username/password)
+    if (strlen(username) > 0 /*&& strlen(password) > 0*/) {
+        send_msg(fd, "AUTH_SUCCESS\n");
+        return 1;
+    } else {
+        send_msg(fd, "AUTH_FAILED\n");
+        return 0;
+    }
+}
+
 // Send file content
 void send_file_content(int fd, const char *filename) {
     FILE *f = fopen(filename, "r");
@@ -102,6 +156,16 @@ int main(int argc, char *argv[]) {
 
     printf("[SERVER] Client connected.\n");
 
+    // Authenticate client
+    if (!authenticate_client(clientfd)) {
+        printf("[SERVER] Authentication failed.\n");
+        close(clientfd);
+        close(sockfd);
+        return 0;
+    }
+
+    printf("[SERVER] Client authenticated.\n");
+
     // Start measuring uptime
     time_t start_time = time(NULL);
 
@@ -118,6 +182,8 @@ int main(int argc, char *argv[]) {
         }
 
         buffer[n] = '\0';
+
+        printf("[SERVER] Received: '%s'\n", buffer);
 
         if (strncmp(buffer, "DATE", 4) == 0) {
             send_datetime(clientfd);

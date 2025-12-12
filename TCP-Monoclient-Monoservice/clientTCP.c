@@ -22,6 +22,62 @@ void read_response(int sockfd) {
     }
 }
 
+// Handle authentication
+int authenticate(int sockfd) {
+    char buffer[BUF_SIZE];
+    char input[BUF_SIZE];
+
+    // Read username prompt
+    int n = read(sockfd, buffer, BUF_SIZE);
+    if (n <= 0) return 0;
+    buffer[n] = '\0';
+    printf("%s", buffer);
+
+    // Send username
+    while (1) {
+        fgets(input, sizeof(input), stdin);
+        input[strcspn(input, "\n")] = 0;
+        if (strlen(input) > 0) break;
+        printf("Username cannot be empty. Try again: ");
+        fflush(stdout);
+    }
+    printf("[CLIENT] Sending username: '%s'\n", input);
+    write(sockfd, input, strlen(input));
+    write(sockfd, "\n", 1);
+
+    
+    // Read password prompt
+    n = read(sockfd, buffer, BUF_SIZE);
+    if (n <= 0) return 0;
+    buffer[n] = '\0';
+    printf("%s", buffer);
+
+    // Send password
+    while (1) {
+        fgets(input, sizeof(input), stdin);
+        input[strcspn(input, "\n")] = 0;
+        if (strlen(input) > 0) break;
+        printf("Password cannot be empty. Try again: ");
+        fflush(stdout);
+    }
+    printf("[CLIENT] Sending password: '%s'\n", input);
+    write(sockfd, input, strlen(input));
+    write(sockfd, "\n", 1);
+
+    // Read auth response
+    n = read(sockfd, buffer, BUF_SIZE);
+    if (n <= 0) return 0;
+    buffer[n] = '\0';
+
+    if (strstr(buffer, "AUTH_SUCCESS")) {
+        printf("[CLIENT] Authentication successful.\n");
+        return 1;
+    } else {
+        printf("[CLIENT] Authentication failed.\n");
+        return 0;
+    }
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         fprintf(stderr, "Usage: %s <server_ip> <port>\n", argv[0]);
@@ -55,6 +111,12 @@ int main(int argc, char *argv[]) {
     }
 
     printf("[CLIENT] Connected to %s:%d\n", server_ip, port);
+
+    /* Authenticate */
+    if (!authenticate(sockfd)) {
+        close(sockfd);
+        return 1;
+    }
 
     /* 4. Command loop */
     char cmd[BUF_SIZE];
