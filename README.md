@@ -1,4 +1,4 @@
-# UNIX-MidW Socket Programming Projects
+# UNIX-MiddleWare Socket Programming Projects
 
 This repository contains various socket programming examples in C for UNIX/Linux systems, demonstrating different communication patterns using TCP and UDP protocols.
 
