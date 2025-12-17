@@ -14,6 +14,5 @@ This repository contains various socket programming examples in C for UNIX/Linux
 
 5. **TCP-multiclients-mutiserveur**: Advanced multiservice TCP server handling multiple clients with multiple specialized services (date/time, directory listing, file content, uptime) using threads.
 
-6. **lsFolderTest**: Test folder for directory listing functionality.
 
 Each project folder contains source code, Makefiles for compilation, and detailed README with setup and execution instructions.
